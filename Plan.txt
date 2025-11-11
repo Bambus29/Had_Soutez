@@ -1,0 +1,75 @@
+🧩 Název projektu
+
+Dual Snake
+(pracovní název — hra o hadovi existujícím ve dvou vrstvách reality)
+
+💡 Herní koncept – „Dvouvrstvý had“
+
+Hráč ovládá hada, který existuje ve dvou vrstvách:
+
+Vrstva 1 – Hlavní svět:
+Obsahuje jídlo, překážky a nepřátele (duchy).
+Hráč zde může růst a získávat body.
+
+Vrstva 2 – Stínový svět:
+Bez jídla i nepřátel – bezpečné útočiště.
+Každý krok v této vrstvě zkracuje hada o 1 segment.
+Hráč zde přežívá, ale pomalu „umírá“.
+
+Cíl hry:
+Udržet hada naživu co nejdéle a nasbírat co nejvíce bodů.
+Hráč musí balancovat riziko (hlavní svět) a bezpečí (stínový svět).
+
+⚙️ Základní mechaniky
+
+Pohyb hada po gridu (čtvercové pole).
+
+Přepínání vrstev klávesou (např. Space).
+
+Růst po sebrání jídla.
+
+Zkracování při pohybu ve stínové vrstvě.
+
+Kolize s tělem a překážkami = konec hry.
+
+Možní nepřátelé – „duchové“ pohybující se po hlavní vrstvě.
+
+Volitelné: portály pro teleportaci mezi místy nebo vrstvami.
+
+
+🎨 Vizuální styl
+
+Dvě barevné palety – např. modrá (hlavní) a fialová (stínová).
+
+Efekt přepnutí vrstvy (např. bliknutí nebo fade).
+
+Had má jinou průhlednost podle vrstvy.
+
+📅 Plán (měsíc vývoje)
+Týden 1 – Základy
+
+ Nastavit MonoGame projekt
+
+ Vytvořit třídu Snake
+
+ Implementovat pohyb a růst
+
+ Kolize se stěnami a sebou
+
+Týden 2 – Herní objekty
+
+ Přidat třídu Food
+
+ Implementovat IGameObject
+
+ Přidat logiku vrstvy (Layer1 / Layer2)
+
+ Základní UI (skóre, restart)
+
+Týden 3 – Speciální mechaniky
+
+ Zkracování ve stínové vrstvě
+
+ Duchové nebo portály
+
+ Doladění přepínání vrstev

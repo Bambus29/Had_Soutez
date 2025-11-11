@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SharpDX.Direct2D1.Effects;
 
 namespace Had
 {
@@ -8,6 +9,15 @@ namespace Had
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+
+        private const int CellSize = 20;
+        private const int GridWidth = 30;
+        private const int GridHeight = 20;
+
+        private Snake snake;
+        private Food food;
+        private Texture2D pixel;
+        public bool IsAlive { get; private set; } = true;
 
         public Game1()
         {
@@ -18,7 +28,8 @@ namespace Had
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            snake = new Snake(GridWidth / 2, GridHeight / 2, 6); // začátek délka hada = poslední číslo
+            food = new Food(5, 5);
 
             base.Initialize();
         }
@@ -26,27 +37,53 @@ namespace Had
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // TODO: use this.Content to load your game content here
+            pixel = new Texture2D(GraphicsDevice, 1, 1);
+            pixel.SetData(new[] { Color.White });
         }
+        private void RestartGame()
+        {
+            snake = new Snake(GridWidth / 2, GridHeight / 2, 6, GridWidth, GridHeight);
+            food.Respawn(GridWidth, GridHeight);
+        }
+
 
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            if (!snake.IsAlive)
+            {
+                if (Keyboard.GetState().IsKeyDown(Keys.R))
+                {
+                    RestartGame();
+                }
+                return; // stop update, dokud se nerestartuje
+            }
+
+            snake.Update(gameTime);
+
+            // kolize s jídlem
+            if (snake.Head == food.Position)
+            {
+                snake.Grow(2);
+                food.Respawn(GridWidth, GridHeight);
+            }
 
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.Black);
 
-            // TODO: Add your drawing code here
+            _spriteBatch.Begin();
+            snake.Draw(_spriteBatch, pixel, CellSize, snake.IsAlive ? Color.LimeGreen : Color.DarkRed);
+            food.Draw(_spriteBatch, pixel, CellSize);
+            _spriteBatch.End();
 
             base.Draw(gameTime);
         }
+
     }
 }
