@@ -5,8 +5,11 @@ using System.Collections.Generic;
 
 namespace Had
 {
-    public class Duch
+    public class Duch : IGameObject
     {
+        public Point Position => Head;
+        public LayerType Layer => LayerType.Main;
+
         private List<Point> body = new List<Point>();
         private Point direction;
         private int gridWidth;
@@ -30,17 +33,24 @@ namespace Had
 
         public void Update(GameTime gameTime)
         {
-            moveTimer += gameTime.ElapsedGameTime.TotalSeconds;
+            if (!IsAlive) return;
+            if (body.Count == 0) { IsAlive = false; return; }
+
+            double delta = gameTime.ElapsedGameTime.TotalSeconds;
+            if (delta <= 0) return;
+            moveTimer += delta;
 
             if (moveTimer >= moveInterval)
             {
-                moveTimer = 0;
+                moveTimer -= moveInterval;
                 Move();
             }
         }
 
         private void Move()
         {
+            if (body.Count == 0) return;
+
             Point newHead = new Point(body[0].X + direction.X, body[0].Y + direction.Y);
 
             // Pokud by duch narazil na stěnu nebo své tělo, vyber náhodný platný směr
@@ -57,6 +67,10 @@ namespace Had
                     newHead = new Point(body[0].X + direction.X, body[0].Y + direction.Y);
                     attempts++;
                 }
+
+                // Pokud pořád není platný, nedělej nic (předejdeme vložení duplicitního headu)
+                if (!IsValid(newHead))
+                    return;
             }
 
             body.Insert(0, newHead);
@@ -83,16 +97,15 @@ namespace Had
             return possibleDirections[random.Next(possibleDirections.Count)];
         }
 
-        public void Draw(SpriteBatch spriteBatch, Texture2D pixel, int cellSize, Color color, LayerType playerLayer)
+        // Signatura odpovídá IGameObject
+        public void Draw(SpriteBatch spriteBatch, Texture2D pixel, int cellSize, Color color)
         {
-            if (playerLayer == LayerType.Shadow) return;
-
             foreach (var segment in body)
                 spriteBatch.Draw(pixel, new Rectangle(segment.X * cellSize, segment.Y * cellSize, cellSize, cellSize), color);
         }
 
         public List<Point> Body => body;
-        public Point Head => body[0];
+        public Point Head => body.Count > 0 ? body[0] : new Point(-1, -1);
 
         // Debug properties
         public double DebugMoveTimer => moveTimer;

@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
+using System;
 
 namespace Had
 {
@@ -15,6 +16,9 @@ namespace Had
         private double moveTimer = 0;
         private double moveInterval = 0.15;
         public bool IsAlive { get; private set; } = true;
+
+        // debug: uloží důvod posledního zabití
+        public string LastKillReason { get; private set; } = string.Empty;
 
         private int gridWidth = 30;
         private int gridHeight = 20;
@@ -34,20 +38,27 @@ namespace Had
 
         public void Update(GameTime gameTime)
         {
-            moveTimer += gameTime.ElapsedGameTime.TotalSeconds;
+            if (!IsAlive) return;
+            if (body.Count == 0) { Kill("empty-body"); return; }
+
+            // bezpečné přičítání delta času (vyhneme se záporným nebo nulovým hodnotám)
+            double delta = gameTime.ElapsedGameTime.TotalSeconds;
+            if (delta <= 0) return;
+            moveTimer += delta;
 
             HandleInput();
 
             if (moveTimer >= moveInterval)
             {
-                moveTimer = 0;
+                // odečteme interval místo nastavení na 0, aby se neztratil přebytek (stabilnější při dropu FPS)
+                moveTimer -= moveInterval;
 
                 if (Layer == LayerType.Shadow)
                 {
                     Move();
                     Shrink(1);
                     if (body.Count == 0)
-                        Kill();
+                        Kill("shrink-empty");
                 }
                 else
                 {
@@ -86,17 +97,19 @@ namespace Had
 
         private void Move()
         {
+            if (body.Count == 0) return;
+
             Point newHead = new Point(body[0].X + direction.X, body[0].Y + direction.Y);
 
             if (newHead.X < 0 || newHead.Y < 0 || newHead.X >= gridWidth || newHead.Y >= gridHeight)
             {
-                Kill();
+                Kill("out-of-bounds");
                 return;
             }
 
             if (body.Contains(newHead))
             {
-                Kill();
+                Kill("self-collision");
                 return;
             }
 
@@ -122,9 +135,11 @@ namespace Had
             }
         }
 
-        public void Kill()
+        // nyní s volitelným důvodem, kompatibilní se stávajícími voláními
+        public void Kill(string reason = null)
         {
             IsAlive = false;
+            LastKillReason = reason ?? "Killed";
         }
 
         public void Draw(SpriteBatch spriteBatch, Texture2D pixel, int cellSize, Color color)

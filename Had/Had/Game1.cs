@@ -1,7 +1,8 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System.Collections.Generic;
 
 namespace Had
 {
@@ -28,6 +29,9 @@ namespace Had
         // debug counters
         private int updateCounter = 0;
 
+        // random pro spawn duchů
+        private Random _rand = new Random();
+
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -40,10 +44,13 @@ namespace Had
             snake = new Snake(GridWidth / 2, GridHeight / 2, 6, GridWidth, GridHeight);
             food = new Food(5, 5);
 
-            // vytvoření duchů
+            // vytvoření duchů na bezpečných pozicích (nepřekrývat hada ani jídlo)
             duchove.Clear();
             for (int i = 0; i < 3; i++)
-                duchove.Add(new Duch(i * 5, i * 5, snake.Body.Count, GridWidth, GridHeight));
+            {
+                var p = FindSafeSpawn();
+                duchove.Add(new Duch(p.X, p.Y, snake.Body.Count, GridWidth, GridHeight));
+            }
 
             base.Initialize();
         }
@@ -56,6 +63,32 @@ namespace Had
 
             // font pro UI, pokud máš
             // font = Content.Load<SpriteFont>("DefaultFont");
+        }
+
+        private Point FindSafeSpawn()
+        {
+            // zkusíme náhodně najít volnou pozici; pokud to nepůjde, projdeme grid
+            for (int attempt = 0; attempt < 200; attempt++)
+            {
+                var x = _rand.Next(0, GridWidth);
+                var y = _rand.Next(0, GridHeight);
+                var p = new Point(x, y);
+                if (!snake.Body.Contains(p) && (food == null || p != food.Position))
+                    return p;
+            }
+
+            for (int y = 0; y < GridHeight; y++)
+            {
+                for (int x = 0; x < GridWidth; x++)
+                {
+                    var p = new Point(x, y);
+                    if (!snake.Body.Contains(p) && (food == null || p != food.Position))
+                        return p;
+                }
+            }
+
+            // krajní fallback
+            return new Point(0, 0);
         }
 
         private void RestartGame()
@@ -73,15 +106,14 @@ namespace Had
             // reset jídla
             food.Respawn(GridWidth, GridHeight);
 
-            // vyčistit a vytvořit nové duchy
+            // vyčistit a vytvořit nové duchy na bezpečných pozicích
             duchove.Clear();
             for (int i = 0; i < 3; i++)
             {
-                // nové startovní pozice duchů
-                duchove.Add(new Duch(5 + i * 5, 5 + i * 5, snake.Body.Count, GridWidth, GridHeight));
+                var p = FindSafeSpawn();
+                duchove.Add(new Duch(p.X, p.Y, snake.Body.Count, GridWidth, GridHeight));
             }
         }
-
 
         protected override void Update(GameTime gameTime)
         {
@@ -89,7 +121,11 @@ namespace Had
             updateCounter++;
             var sHead = snake?.Head ?? new Point(-1, -1);
             var d0Head = duchove.Count > 0 ? duchove[0].Head : new Point(-1, -1);
-            Window.Title = $"U:{updateCounter} ET:{gameTime.ElapsedGameTime.TotalMilliseconds:F1} S:{sHead.X},{sHead.Y} D0:{d0Head.X},{d0Head.Y}";
+
+            // Více debug informací pro zjištění proč se nepohybují:
+            string snakeDebug = snake != null ? $"{snake.DebugMoveTimer:F2}/{snake.DebugMoveInterval:F2} d:{snake.DebugDirection.X},{snake.DebugDirection.Y} alive:{snake.IsAlive} lastKill:{snake.LastKillReason}" : "n/a";
+            string duchDebug = duchove.Count > 0 ? $"{duchove[0].DebugMoveTimer:F2}/{duchove[0].DebugMoveInterval:F2} d:{duchove[0].DebugDirection.X},{duchove[0].DebugDirection.Y}" : "n/a";
+            Window.Title = $"U:{updateCounter} ET:{gameTime.ElapsedGameTime.TotalMilliseconds:F1} S:{sHead.X},{sHead.Y} [{snakeDebug}] D0:{d0Head.X},{d0Head.Y} [{duchDebug}]";
 
             var kState = Keyboard.GetState();
             if (kState.IsKeyDown(Keys.Escape))
@@ -130,13 +166,15 @@ namespace Had
                     {
                         if (duch.Body.Contains(seg))
                         {
-                            snake.Kill();
+                            // předáme důvod pro rychlou diagnostiku
+                            snake.Kill("duch-collision");
                         }
                     }
                 }
             }
-        }
 
+            base.Update(gameTime);
+        }
 
         protected override void Draw(GameTime gameTime)
         {
@@ -159,9 +197,12 @@ namespace Had
             if (snake.Layer == LayerType.Main)
                 food.Draw(_spriteBatch, pixel, CellSize, Color.Red);
 
-            // duchové
-            foreach (var duch in duchove)
-                duch.Draw(_spriteBatch, pixel, CellSize, Color.OrangeRed, snake.Layer);
+            // duchové - vykreslíme je jen pokud je hráč v hlavní vrstvě
+            if (snake.Layer == LayerType.Main)
+            {
+                foreach (var duch in duchove)
+                    duch.Draw(_spriteBatch, pixel, CellSize, Color.OrangeRed);
+            }
 
             // skóre
             if (font != null)
