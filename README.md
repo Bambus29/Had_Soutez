@@ -1,2 +1,2 @@
-# Had_Soutez
-Soutěž s hadem
+# Soutěžní Had
+Toto je můj pokus o zlepšení klasického hada do školní soutěže.
