@@ -204,12 +204,28 @@ namespace Had
                     duch.Draw(_spriteBatch, pixel, CellSize, Color.OrangeRed);
             }
 
+            // když hráč zemře, překreslíme lehce červený overlay přes herní plochu
+            if (snake != null && !snake.IsAlive)
+            {
+                // průhledná červená (alfa ~ 80/255)
+                _spriteBatch.Draw(pixel, new Rectangle(0, 0, GridWidth * CellSize, GridHeight * CellSize), new Color(255, 0, 0, 80));
+            }
+
             // skóre
             if (font != null)
             {
                 _spriteBatch.DrawString(font, $"High Score: {highScore}", new Vector2(10, 10), Color.White);
                 _spriteBatch.DrawString(font, $"Max Score: {maxScore}", new Vector2(10, 30), Color.White);
                 _spriteBatch.DrawString(font, $"Current Score: {currentScore}", new Vector2(10, 50), Color.White);
+
+                if (snake != null && !snake.IsAlive)
+                {
+                    // Zobrazíme i text nápovědy pro restart, pokud je font k dispozici
+                    var msg = "You died - press R to restart";
+                    var size = font.MeasureString(msg);
+                    var pos = new Vector2((GridWidth * CellSize - size.X) / 2, (GridHeight * CellSize - size.Y) / 2);
+                    _spriteBatch.DrawString(font, msg, pos, Color.White);
+                }
             }
 
             _spriteBatch.End();
